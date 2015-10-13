@@ -1,6 +1,6 @@
 {
-  "name": "sigh-mocha",
-  "version": "0.1.2",
+  "name": "sigh-mochasingleprocess",
+  "version": "0.0.1",
   "description": "Sigh plugin for running mocha in a subprocess",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -8,7 +8,7 @@
   "main": "lib/index",
   "repository": {
     "type": "git",
-    "url": "git://github.com/sighjs/sigh-mocha.git"
+    "url": "git://github.com/Flaise/sigh-mochasingleprocess.git"
   },
   "keywords": [
     "build",
@@ -17,11 +17,7 @@
     "sigh-plugin",
     "mocha"
   ],
-  "author": "James Pike <github@chilon.net>",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/sighjs/sigh-mocha/issues"
-  },
   "dependencies": {
     "bluebird": "^2.9.24",
     "glob": "^5.0.5",
