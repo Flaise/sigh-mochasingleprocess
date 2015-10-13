@@ -1,46 +1,33 @@
 import { Bacon, log } from 'sigh-core'
+import {default as Promise} from 'bluebird'
+import {clone} from 'lodash'
+import Mocha from 'mocha'
+var glob = Promise.promisify(require('glob'))
 
 export default function(op, opts = {}) {
-  var mochaProc = op.procPool.prepare(opts => {
-    var Mocha = require('mocha')
-    var Promise = require('bluebird')
-    var _ = require('lodash')
-    var glob = Promise.promisify(require('glob'))
-
+  return op.stream.flatMapLatest(events => {
     var { files } = opts
-    var initRequireCache = _.clone(require.cache)
+    var initRequireCache = clone(require.cache)
     delete opts.files
 
-    return () => {
-      var log = require('sigh-core').log
-
+    var mochaPromise = glob(files).then(fileList => {
       Object.keys(require.cache).forEach(key => {
         if (! initRequireCache[key])
           delete require.cache[key]
       })
-      var mocha = new Mocha(_.clone(opts))
+      var mocha = new Mocha(clone(opts))
+        
+      fileList.forEach(file => mocha.addFile(file))
 
-      log('mocha: run tests in process %s', process.pid)
-      return glob(files).then(fileList => {
-        fileList.forEach(file => mocha.addFile(file))
-
-        return new Promise(resolve => {
-          mocha.run(nFailures => resolve(nFailures))
-        })
+      return new Promise(resolve => {
+        mocha.run(nFailures => resolve(nFailures))
       })
-      .then(nFailures => {
-        // console.log('finish mocha tests', process.pid)
-        return nFailures
-      })
-    }
-  }, opts, { processLimit: 2 })
+    })
+    .then(nFailures => {
+      return nFailures
+    })
 
-  return op.stream.flatMapLatest(events => {
-    var killed = mochaProc.kill()
-    if (killed && killed.length)
-      log.important('killed mocha process: %s', killed.join(', '))
-
-    return Bacon.fromPromise(mochaProc().then(nFailures => {
+    return Bacon.fromPromise(mochaPromise.then(nFailures => {
       return nFailures > 0 ? new Bacon.Error(`mocha: ${nFailures} tests failed`) : events
     }))
   })
